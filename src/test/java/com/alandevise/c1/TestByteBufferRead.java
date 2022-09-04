@@ -31,6 +31,15 @@ public class TestByteBufferRead {
 
         // mark & reset
         // mark 做一个标记，记录position位置，reset 是将position重置到mark位置
+        byteBuffer.rewind();
+        System.out.println((char) byteBuffer.get());
+        System.out.println((char) byteBuffer.get());
+        byteBuffer.mark();      // 这里做一个标记
+        System.out.println((char) byteBuffer.get());
+        System.out.println((char) byteBuffer.get());
+        byteBuffer.reset();     // 将position回到mark位置
+        System.out.println((char) byteBuffer.get());
+        System.out.println((char) byteBuffer.get());
     }
 
 }
