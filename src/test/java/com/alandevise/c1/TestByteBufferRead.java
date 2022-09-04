@@ -40,6 +40,13 @@ public class TestByteBufferRead {
         byteBuffer.reset();     // 将position回到mark位置
         System.out.println((char) byteBuffer.get());
         System.out.println((char) byteBuffer.get());
+
+
+        // get(i) 不会改变position的位置
+        byteBuffer.rewind();
+        debugAll(byteBuffer);
+        System.out.println((char) byteBuffer.get(3));
+        debugAll(byteBuffer);
     }
 
 }
