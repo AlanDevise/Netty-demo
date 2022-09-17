@@ -42,6 +42,7 @@ public class Sever {
 
             // 4. 建立连接 accept [TCP三次握手]
             log.info("Connecting...");
+            // 阻塞意味着线程暂停运行
             SocketChannel sc = serverSocketChannel.accept();    // 建立成功后，便可通过SocketChannel进行读写操作
             log.info("Connected...");
             channels.add(sc);   // 添加建立的SocketChannel 到连接集合中
@@ -49,7 +50,7 @@ public class Sever {
             for (SocketChannel socketChannel : channels) {
                 // 5. 接收客户端发送的数据
                 log.info("Before read... {}", socketChannel);
-                socketChannel.read(buffer);
+                socketChannel.read(buffer); // read方法也是阻塞方法，如果客户端没有数据发送过来，便一直等待
                 buffer.flip();
                 debugRead(buffer);
                 buffer.clear();
