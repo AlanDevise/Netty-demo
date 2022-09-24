@@ -11,7 +11,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
-import static com.alandevise.c1.ByteBufferUtil.debugRead;
+import static com.alandevise.c1.ByteBufferUtil.debugAll;
 
 /**
  * @Filename: Selector.java
@@ -24,6 +24,30 @@ import static com.alandevise.c1.ByteBufferUtil.debugRead;
 
 @Slf4j
 public class ServerWithSelector {
+
+    private static void split(ByteBuffer source) {
+        // 切换为读模式
+        source.flip();
+
+        // 在读模式下遍历完整的source
+        for (int i = 0; i < source.limit(); i++) {
+            // 找到一条完整的消息
+            if (source.get(i) == '\n') {
+                // 获取消息长度
+                int length = i + 1 - source.position();
+                // 将完整的消息存入新的ByteBuffer
+                ByteBuffer target = ByteBuffer.allocate(length);
+                // 从 source 读，向 target 写
+                for (int j = 0; j < length; j++) {
+                    target.put(source.get());
+                }
+                debugAll(target);
+            }
+        }
+        // 切换为写模式
+        source.compact();
+    }
+
     // 忽略可能存在的无限循环
     @SuppressWarnings("InfiniteLoopStatement")
     public static void main(String[] args) throws IOException {
@@ -63,14 +87,26 @@ public class ServerWithSelector {
 
                 // 5. 区分事件类型
                 if (key.isAcceptable()) {   // 如果是accept事件
+
                     // 获取Channel
                     ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+
                     // 建立连接
                     SocketChannel sc = channel.accept();
+
                     // 设置SocketChannel 设置为非阻塞
                     sc.configureBlocking(false);
+
+                    // 新建Buffer
+                    ByteBuffer buffer = ByteBuffer.allocate(16);    // [CRITICAL] attachment
+
                     // 将SocketChannel 注册到 Selector 中
-                    SelectionKey scKey = sc.register(selector, 0, null);
+                    /* 一个SelectionKey 对应一个SocketChannel，每一个SocketChannel拥有自己的buffer
+                     *  互不影响
+                     * */
+                    SelectionKey scKey = sc.register(selector, 0, buffer);
+
+
                     // 设置SelectionKey 的关注点为"可读事件"
                     scKey.interestOps(SelectionKey.OP_READ);
                     log.debug("SocketChannel is {}", sc);
@@ -79,16 +115,29 @@ public class ServerWithSelector {
                     try {
                         // 获取Channel
                         SocketChannel channel = (SocketChannel) key.channel();
-                        // 新建Buffer
-                        ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+                        ByteBuffer buffer = (ByteBuffer) key.attachment();
+
                         // 读取数据存入Buffer
                         int read = channel.read(buffer);    // 如果是正常断开，read 返回 -1
-                        if (read == 1) {
+                        if (read == -1) {
+                            log.info("SocketChannel [{}] 客户端主动断开连接", channel);
                             key.cancel();
                         } else {
-                            // 切换Buffer为读模式
-                            buffer.flip();
-                            debugRead(buffer);
+                            // 以 \n 拆分解析
+                            split(buffer);
+
+                            // 如果position位置和limit位置一致，说明buffer满了，buffer需要扩容
+                            if (buffer.position() == buffer.limit()){
+                                // 将buffer扩容一倍
+                                ByteBuffer newBuffer = ByteBuffer.allocate(buffer.capacity()*2);
+                                // buffer切换为读模式
+                                buffer.flip();
+                                // 新buffer写入原buffer的内容
+                                newBuffer.put(buffer);
+                                // 使用新buffer替换掉旧buffer
+                                key.attach(newBuffer);
+                            }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();

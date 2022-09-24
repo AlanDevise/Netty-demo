@@ -2,7 +2,9 @@ package com.alandevise.c4;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 
 /**
  * @Filename: Client.java
@@ -19,7 +21,9 @@ public class Client {
         SocketChannel socketChannel = SocketChannel.open();
         // 连接至服务器端
         socketChannel.connect(new InetSocketAddress("localhost", 8080));
-
-        System.out.println("waiting...");
+        SocketAddress address = socketChannel.getLocalAddress();
+//        socketChannel.write(Charset.defaultCharset().encode("hello\nworld\n"));
+        socketChannel.write(Charset.defaultCharset().encode("012\n3456789abcdef3333\n"));
+        System.in.read();
     }
 }
