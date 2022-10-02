@@ -37,7 +37,7 @@ public class HelloServer {
                             protected void initChannel(NioSocketChannel ch) {
                                 // 将ByteBuf 转换成 String，StringDecoder解码器
                                 ch.pipeline().addLast(new StringDecoder(StandardCharsets.UTF_8));
-                                // 自定义handler
+                                // 自定义handler，Inbound表示进栈
                                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                     // 表示处理读事件
                                     @Override
@@ -47,7 +47,8 @@ public class HelloServer {
                                     }
                                 });
                             }
-                        })
+                        }
+                )
                 // 7. 绑定监听端口
                 .bind(8080);
     }
